@@ -1,0 +1,9 @@
+opensearch-py
+python-dotenv
+pydantic
+fastapi
+uvicorn
+faker
+pytest
+requests
+python-dotenv

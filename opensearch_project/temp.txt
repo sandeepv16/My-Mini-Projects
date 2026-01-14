@@ -1,0 +1,327 @@
+# Docker Compose is a tool that lets you run multiple applications together in isolated environments called containers.
+# Think of containers like lightweight virtual machines that package an application with everything it needs to run.
+# This file is the configuration (instructions) for our E-Commerce Search Application.
+# It defines three services: OpenSearch (a powerful search engine), OpenSearch Dashboards (a web interface to explore data), and the Python search application (our custom code).
+
+# The 'services' section is where we define each container/application we want to run
+services:
+
+  # This is the OpenSearch service - OpenSearch is like Google for your data, but you control it.
+  # It's the core search engine that will store and search through product information.
+  opensearch:
+    # 'image' tells Docker to download and use a pre-built OpenSearch application from the internet.
+    # It's like downloading an app from an app store, but for servers.
+    # Version 2.6.0 ensures we get a specific, tested version.
+    image: opensearchproject/opensearch:2.6.0
+    # 'container_name' gives this container a friendly name so we can refer to it easily.
+    # It's like naming your pet - makes it easier to talk about.
+    container_name: opensearch
+    # 'environment' sets configuration options for OpenSearch, like settings on your phone.
+    environment:
+      # This tells OpenSearch to run as a single server (not part of a cluster of multiple servers).
+      # Good for development and learning.
+      - discovery.type=single-node
+      # Memory locking prevents the operating system from moving OpenSearch's memory around.
+      # This makes it faster and more reliable.
+      - bootstrap.memory_lock=true
+      # JVM is Java Virtual Machine - the engine that runs Java programs like OpenSearch.
+      # This sets the memory available to Java to 512MB minimum and maximum.
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      # Disables security features for development - makes it easier to get started.
+      # In production, you'd want security enabled.
+      - DISABLE_SECURITY_PLUGIN=true
+    # 'ulimits' sets limits on system resources the container can use.
+    ulimits:
+      # 'memlock' controls memory locking - unlimited means the container can lock as much memory as needed.
+      memlock:
+        soft: -1
+        hard: -1
+      # 'nofile' sets the maximum number of files the container can open at once.
+      # 65536 is a high number to handle many concurrent connections.
+      nofile:
+        soft: 65536
+        hard: 65536
+    # 'ports' maps ports from your computer to the container, like creating doors for communication.
+    ports:
+      # Maps port 9200 on your computer to port 9200 in the container.
+      # This is the main API port where you send search requests.
+      - "9200:9200"
+      # Another port for performance monitoring tools.
+      - "9600:9600"
+    # 'volumes' connects storage from your computer to the container, so data persists.
+    volumes:
+      # Creates a named volume called 'opensearch-data' and connects it to the container's data directory.
+      # This means even if the container stops, your search data is saved.
+      - opensearch-data:/usr/share/opensearch/data
+    # 'networks' defines how containers communicate with each other.
+    networks:
+      # Connects this container to the 'opensearch-net' network for secure communication.
+      - opensearch-net
+
+  # OpenSearch Dashboards is like a web browser interface for exploring your search data.
+  # It's similar to Kibana for Elasticsearch, but for OpenSearch.
+  opensearch-dashboards:
+    # Downloads the pre-built Dashboards application.
+    image: opensearchproject/opensearch-dashboards:2.6.0
+    # Names the container for easy reference.
+    container_name: opensearch-dashboards
+    # Maps port 5601 on your computer to the web interface.
+    ports:
+      - "5601:5601"
+    # Configuration settings for Dashboards.
+    environment:
+      # Tells Dashboards where to find the OpenSearch server (the container named 'opensearch').
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      # Disables security for development ease.
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+      # Sets the interface language to English.
+      - I18N_LOCALE=en
+    # 'depends_on' ensures this container starts after OpenSearch is ready.
+    # Like making sure the engine is running before starting the car dashboard.
+    depends_on:
+      - opensearch
+    # Connects to the same network as OpenSearch.
+    networks:
+      - opensearch-net
+
+  # This is our custom Python application built with FastAPI.
+  # It provides the web API that users interact with for searching products.
+  search-app:
+    # Instead of downloading an image, 'build' tells Docker to create the image from our local files.
+    build:
+      # Use the current directory as the build context (where to find files).
+      context: .
+      # Use the Dockerfile in the current directory for build instructions.
+      dockerfile: Dockerfile
+    # Name for the container.
+    container_name: search-app
+    # Mounts the current directory into the container, so code changes are reflected immediately.
+    volumes:
+      - .:/app
+    # The command to run when the container starts - runs our Python application.
+    command: python main.py
+    # Maps port 8000 for the web API.
+    ports:
+      - "8000:8000"
+    # Starts after OpenSearch is ready.
+    depends_on:
+      - opensearch
+    # Loads environment variables from a .env file for configuration.
+    env_file:
+      - .env
+    # Connects to the network.
+    networks:
+      - opensearch-net
+
+# 'networks' section defines custom networks for containers to communicate securely.
+networks:
+  # Creates a network called 'opensearch-net' that all services can use.
+  opensearch-net:
+
+# 'volumes' section defines persistent storage that survives container restarts.
+volumes:
+  # Creates a named volume for OpenSearch data - like an external hard drive for the database.
+  opensearch-data:
+
+# =============================================================================
+# HOW SERVICES ARE DEFINED IN DOCKER-COMPOSE.YML
+# =============================================================================
+
+# WHAT IS A SERVICE DEFINITION?
+# A service in Docker Compose is like a blueprint or recipe for creating and running a container.
+# When you define a service, you're telling Docker: "Here's how to create and run this specific application."
+
+# WHY DO WE DEFINE SERVICES?
+# 1. CONSISTENCY: Everyone gets the same setup - no "works on my machine" problems
+# 2. REPRODUCIBILITY: You can recreate the exact same environment anytime
+# 3. ISOLATION: Each service runs in its own container, separate from others
+# 4. SCALING: Easy to run multiple copies of the same service
+# 5. DEPENDENCY MANAGEMENT: Services can depend on each other (start in the right order)
+
+# WHAT HAPPENS WHEN YOU DEFINE A SERVICE?
+# When you run 'docker-compose up', Docker reads your service definitions and:
+# 1. Downloads or builds the required images (like downloading apps)
+# 2. Creates containers based on your specifications
+# 3. Sets up networks so containers can talk to each other
+# 4. Configures volumes for data persistence
+# 5. Maps ports so you can access services from your browser
+# 6. Starts all containers in the correct order
+
+# HOW TO DEFINE A SERVICE - BASIC STRUCTURE:
+# Each service definition includes:
+#
+# services:
+#   your-service-name:
+#     image: some-image:version          # OR build: . (for custom apps)
+#     container_name: friendly-name      # Optional friendly name
+#     ports:                             # How to access the service
+#       - "host-port:container-port"
+#     environment:                       # Configuration settings
+#       - KEY=value
+#     volumes:                           # Data persistence
+#       - host-path:container-path
+#     depends_on:                        # Start after these services
+#       - other-service
+#     networks:                          # Which networks to join
+#       - network-name
+
+# EXAMPLE SERVICE DEFINITION BREAKDOWN:
+#
+# services:
+#   web-app:                    # Service name (you choose this)
+#     image: nginx:alpine       # Use pre-built nginx web server
+#     ports:
+#       - "8080:80"            # Access at localhost:8080
+#     volumes:
+#       - ./html:/usr/share/nginx/html  # Mount local files
+#
+# This creates a web server accessible at http://localhost:8080
+# serving files from your local ./html directory.
+
+# WHY DOCKER-COMPOSE.YML INSTEAD OF RUNNING CONTAINERS MANUALLY?
+#
+# MANUAL APPROACH (without docker-compose):
+# docker run --name web -p 8080:80 -v ./html:/usr/share/nginx/html nginx:alpine
+# docker run --name db -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:13
+# docker network create my-network
+# docker network connect my-network web
+# docker network connect my-network db
+#
+# That's 6 separate commands! And you have to remember them all.
+#
+# DOCKER-COMPOSE APPROACH:
+# Just write the configuration once in docker-compose.yml, then:
+# docker-compose up -d
+#
+# Benefits:
+# - All configuration in one file
+# - Easy to share with team members
+# - Version control friendly
+# - Less error-prone
+# - Easier to modify and maintain
+
+# WHAT MAKES A GOOD SERVICE DEFINITION?
+#
+# 1. CLEAR NAMING: Use descriptive service names (web, api, database)
+# 2. PROPER DEPENDENCIES: Use depends_on for startup order
+# 3. RESOURCE LIMITS: Set memory/CPU limits for production
+# 4. HEALTH CHECKS: Add health checks for reliability
+# 5. ENVIRONMENT VARIABLES: Use env files for sensitive config
+# 6. NETWORKING: Put related services on the same network
+# 7. VOLUMES: Use named volumes for data that needs to persist
+
+# COMMON SERVICE DEFINITION PATTERNS:
+#
+# WEB APPLICATION:
+# services:
+#   web:
+#     build: .
+#     ports: ["3000:3000"]
+#     environment:
+#       - NODE_ENV=development
+#
+# DATABASE:
+# services:
+#   db:
+#     image: postgres:13
+#     environment:
+#       - POSTGRES_PASSWORD=secret
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#
+# BACKGROUND WORKER:
+# services:
+#   worker:
+#     build: .
+#     command: python worker.py
+#     depends_on:
+#       - db
+#       - redis
+
+# =============================================================================
+# COMMON DOCKER COMPOSE COMMANDS FOR THIS PROJECT
+# =============================================================================
+
+# These are the most useful commands you'll use when working with this Docker setup.
+# Run these commands in your terminal from the project directory.
+
+# 1. START ALL SERVICES
+# docker-compose up -d
+# Explanation: Starts all containers defined in docker-compose.yml in detached mode (background).
+# The -d flag means the containers run in the background so you can continue using the terminal.
+# This will start OpenSearch, Dashboards, and your Python app.
+
+# 2. STOP ALL SERVICES
+# docker-compose down
+# Explanation: Stops and removes all running containers, networks created by this compose file.
+# Your data in volumes will be preserved for next startup.
+
+# 3. VIEW RUNNING CONTAINERS
+# docker-compose ps
+# Explanation: Shows the status of all containers defined in the compose file.
+# You'll see if they're running, stopped, or have errors.
+
+# 4. VIEW LOGS FROM ALL SERVICES
+# docker-compose logs
+# Explanation: Shows the output/logs from all containers.
+# Useful for debugging when something isn't working.
+
+# 5. VIEW LOGS FROM A SPECIFIC SERVICE
+# docker-compose logs opensearch
+# docker-compose logs search-app
+# Explanation: Shows logs only from the specified service (opensearch, opensearch-dashboards, or search-app).
+# Replace 'opensearch' with the service name you want to check.
+
+# 6. RUN A COMMAND INSIDE A RUNNING CONTAINER
+# docker-compose exec search-app bash
+# Explanation: Opens a shell (command prompt) inside the running container.
+# Useful for debugging or running commands inside the container environment.
+
+# 7. RUN A PYTHON SCRIPT INSIDE THE APP CONTAINER
+# docker-compose exec search-app python scripts/generate_data.py
+# Explanation: Runs a specific command inside the search-app container.
+# This is how you execute the data generation or indexing scripts.
+
+# 8. RESTART A SPECIFIC SERVICE
+# docker-compose restart opensearch
+# Explanation: Restarts just one service without affecting others.
+# Useful if you change configuration and need to restart.
+
+# 9. BUILD THE CUSTOM IMAGE (if you modify Dockerfile)
+# docker-compose build search-app
+# Explanation: Rebuilds the Docker image for the search-app service.
+# Needed when you change the Dockerfile or requirements.
+
+# 10. STOP AND REMOVE EVERYTHING (including volumes/data)
+# docker-compose down -v
+# Explanation: Stops containers and removes volumes (data).
+# WARNING: This will delete your OpenSearch data! Use carefully.
+
+# =============================================================================
+# QUICK START WORKFLOW
+# =============================================================================
+
+# To get started with this project:
+# 1. Make sure Docker and Docker Compose are installed
+# 2. Run: docker-compose up -d
+# 3. Wait 30-60 seconds for OpenSearch to start
+# 4. Generate data: docker-compose exec search-app python scripts/generate_data.py
+# 5. Index data: docker-compose exec search-app python scripts/index_data.py
+# 6. Test the API at http://localhost:8000/docs
+# 7. Explore data at http://localhost:5601
+
+# =============================================================================
+# TROUBLESHOOTING TIPS
+# =============================================================================
+
+# If containers won't start:
+# - Check if ports 9200, 9600, 5601, 8000 are free: docker-compose ps
+# - View detailed logs: docker-compose logs
+# - Restart services: docker-compose restart
+
+# If you get permission errors:
+# - On Windows, make sure Docker Desktop is running as administrator
+# - On Linux/Mac, you might need sudo for Docker commands
+
+# If OpenSearch takes too long to start:
+# - It needs 30-60 seconds to initialize. Check logs with: docker-compose logs opensearch
