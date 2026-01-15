@@ -1,0 +1,5 @@
+docling
+psycopg2-binary
+python-dotenv
+uvicorn
+pytest

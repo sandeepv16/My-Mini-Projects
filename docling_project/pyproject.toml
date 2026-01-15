@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docling-project"
+version = "0.1.0"
+description = "PDF parser project using Docling"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "docling>=2.43.0",
+    "psycopg2-binary",
+    "python-dotenv",
+    "uvicorn",
+    "pytest",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests",
+]

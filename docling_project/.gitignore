@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment Variables
+.env
+
+# Docker
+.docker/
+
+# IDE
+.idea/
+.vscode/
+
+# Project specific
+input_pdfs/*
+!input_pdfs/.gitkeep
+
+# Logs
+*.log
