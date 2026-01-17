@@ -27,3 +27,10 @@ input_pdfs/*
 
 # Logs
 *.log
+
+.cache/
+models/
+*.bin
+*.onnx
+venv/
+.env
