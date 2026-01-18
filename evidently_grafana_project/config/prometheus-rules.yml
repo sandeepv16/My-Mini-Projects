@@ -1,0 +1,46 @@
+groups:
+  - name: clv_drift_alerts
+    interval: 30s
+    rules:
+      # Alert when data drift is detected
+      - record: clv_data_drift_rate
+        expr: rate(clv_drift_detected_total{drift_type="data"}[5m])
+      
+      # Alert when model drift is detected
+      - record: clv_model_drift_rate
+        expr: rate(clv_drift_detected_total{drift_type="model"}[5m])
+      
+      # Model performance degradation
+      - record: clv_model_r2_score
+        expr: clv_model_performance{metric="r2"}
+      
+      # Alert conditions
+      - alert: CLVDataDriftDetected
+        expr: clv_data_drift_rate > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: drift_monitoring
+        annotations:
+          summary: "CLV model data drift detected"
+          description: "Data drift has been detected in the CLV model input features"
+      
+      - alert: CLVModelDriftDetected
+        expr: clv_model_drift_rate > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: drift_monitoring
+        annotations:
+          summary: "CLV model performance drift detected"
+          description: "Model performance has degraded significantly"
+      
+      - alert: CLVModelPerformanceLow
+        expr: clv_model_r2_score < 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: model_performance
+        annotations:
+          summary: "CLV model R² score is below threshold"
+          description: "Current R² score: {{ $value }}"
