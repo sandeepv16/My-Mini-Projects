@@ -1,1 +1,1 @@
-This reposirotry consists of code generated from Claude for reverse engineering purpose and to understand the usage of various tools and then use the knowkledge to build production grade Agentic RAG system
+This repository consists of code generated from Claude for reverse engineering purpose and to understand the usage of various tools and then use the knowkledge to build production grade Agentic RAG system
